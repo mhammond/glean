@@ -370,14 +370,16 @@ fn initialize_inner(
         })
         .expect("Failed to spawn Glean's init thread");
 
-    // In test mode we wait for initialization to finish.
-    if dispatcher::global::TESTING_MODE.load(Ordering::SeqCst) {
-        init_handle.join().expect("Failed to join initialization thread");
-    }
-
     // Mark the initialization as called: this needs to happen outside of the
     // dispatched block!
     INITIALIZE_CALLED.store(true, Ordering::SeqCst);
+
+    // In test mode we wait for initialization to finish.
+    // This needs to run after we set `INITIALIZE_CALLED`, so it's similar to normal behavior.
+    if dispatcher::global::is_test_mode() {
+        init_handle.join().expect("Failed to join initialization thread");
+    }
+
     Ok(())
 }
 
